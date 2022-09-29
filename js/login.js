@@ -1,24 +1,52 @@
 //declaración de variables y constantes globales
 // array de usuarios auxiliar usados para el contraste
-const usuario1 = new Usuario("felipe", "boz", "prueba1@gmail.com", "felipe", 123, 0)
-const usuario2 = new Usuario("john", "doe", "prueba2@gmail.com", "john", 456, 0)
-const usuario3 = new Usuario("mary", "doe", "prueba3@gmail.com", "mary", 789, 0)
-const auxiliarArrayUsuarios = [usuario1, usuario2, usuario3]
-let usuarios = auxiliarArrayUsuarios
-let usuarioIngresado=''
-console.log("usuarios = " + usuarios)
+
 
 //declaración de botones para eventos
+const PATH_USUARIOS_REGISTRADOS = "json/usuariosRegistrados.json"
+let usuarioIngresado = ''
 let botEntrar = document.getElementById('botEntrar')
 botEntrar.addEventListener('click',tieneUsuario)
 let botCancelar = document.getElementById('botCancelar')
 botCancelar.addEventListener('click',limpiaCajas)
+//--------FUNCIONES SOBRE JSON---------------
+inicializa()
 
-//--------FUNCIONES---------------
+function escribeJSON(){
 
+}
+
+function editaJSON(){
+
+}
+
+//--------FUNCIONES INICIALIZACIÓN---------------
+function inicializa(){
+    cargaUsuariosRegistrados()
+}
+// Cargo los usuarios desde JSON solo la primera vez que carga página.
+function cargaUsuariosRegistrados() {
+    fetch(PATH_USUARIOS_REGISTRADOS)
+    .then((respuesta) => respuesta.json())
+    .then((respuesta) => {
+    localStorage.setItem('usuariosRegistrados',JSON.stringify(respuesta))
+    login2()
+    })
+}
+
+function login2(){
+    let usuarioLogueado = localStorage.getItem('usuarioLogueado')
+    if (usuarioLogueado && usuarioLogueado.estado == 0){
+        aHome()
+    }
+}
+
+//--------FUNCIONES NAVEGACIÓN---------------
 function aHome(){
     window.location.href='pages/home.html'
 }
+
+//--------FUNCIONES EN LOGIN---------------
 
 //limpia cajas
 
@@ -60,44 +88,55 @@ function constructorUsuarioLoginExitoso(usuario){
     document.body.append(div)
     
 }
-//buscador de usuarios
-function buscaUsuario(usuarioIngresado){
-    for(const i in auxiliarArrayUsuarios){
-        if(usuarioIngresado == auxiliarArrayUsuarios[i].usuario ){
-            user = auxiliarArrayUsuarios[i]
-            console.log("Se encontró al usuario "+ usuarioIngresado)
-            break
-        }
-        else{
-            console.log("No se encontró al usuario "+ usuarioIngresado)
-            user = [null,null,null,null,null,null]
-        }
-    }
-    return user
-}
+
+
 
 //constructor de objeto USUARIO
-function Usuario(nombre, apellido, mail, usuario, pass, bloqueado){
+function Usuario(nombre, apellido, mail, usuario, pass, bloqueado, intentos){
     this.nombre = nombre
     this.apellido = apellido
     this.mail = mail
     this.usuario = usuario
     this.pass = pass
     this.bloqueado = bloqueado
+    this.intentos = intentos
 }
 
-//crea usuario
-function creaUsuario(){
-    nombre = prompt('Ingrese su nombre')
-    apellido = prompt('Ingrese su apellido')
-    mail = prompt('Ingrese su mail')
-    usuario = prompt('Ingrese el usuario')
-    pass = prompt('Ingrese su contraseña')
 
-    const USUARIO = new Usuario(nombre, apellido, mail, usuario, pass)
-    usuarios.push(USUARIO)
+//determina indices
+
+function determinaIndice(clave, valor, objeto){
+    let indice = -1
+    let aux = 0
+    for(const row of objeto){
+        aux += 1
+        if(valor == row[clave]){
+            indice = aux
+            break
+        }  
+    }
+    return indice
 }
 
+//buscador de usuarios
+function buscaUsuario(usuarioIngresado){
+    let user = []  
+    let auxiliarArrayUsuarios = JSON.parse(localStorage.getItem('usuariosRegistrados'))
+    console.log("auxuliar de array usuarios en login "+ auxiliarArrayUsuarios)
+    for(const row of auxiliarArrayUsuarios){
+        if(usuarioIngresado == row['usuario']){
+            user = row
+            console.log("Se encontró al usuario "+ user)
+            break
+        }
+    }
+    if (user.length==0){
+            console.log("No se encontró al usuario "+ usuarioIngresado)
+            user = [null,null,null,null,null,null]
+        }
+    
+    return user
+}
 //funcion de login
 function login(){
     
@@ -108,14 +147,15 @@ function login(){
     let coincideContraseña = false
     let indiceUsuario = -1
     let indiceContrasenia = -1
-
+    let auxiliarArrayUsuarios = JSON.parse(localStorage.getItem('usuariosRegistrados'))
     usuarioIngresado = inputUser.value
     passIngresada = inputPass.value
-    user = buscaUsuario(usuarioIngresado)
+    let user = buscaUsuario(usuarioIngresado)
+    console.log("El usuario encontrado es "+user.usuario)
     if(usuarioIngresado == null || usuarioIngresado == ""){
         return 0
     }
-    else if(user.bloqueado == 1){
+    else if(user.estado == 1){
         return 99
     }
     else{
@@ -125,7 +165,7 @@ function login(){
             else{
                 coincideUsuario = true
                 console.log('Usuario coincide '+ user.usuario)
-                indiceUsuario = usuarios.indexOf(user)
+                indiceUsuario = determinaIndice('usuario',user.usuario,auxiliarArrayUsuarios)
                 
             }
         }
@@ -139,7 +179,7 @@ function login(){
     else{
         coincideContraseña = true
         console.log('La contraseña coincide '+ user.pass)
-        indiceContrasenia = usuarios.indexOf(user)
+        indiceContrasenia = determinaIndice('pass',user.pass,auxiliarArrayUsuarios)
     }
                         
     if(coincideUsuario == false){
@@ -176,7 +216,8 @@ function tieneUsuario(){
                 console.log(mensaje)
                 break
             case 2:
-                user = buscaUsuario(usuarioIngresado)
+                let user = buscaUsuario(usuarioIngresado)
+                localStorage.setItem('usuarioLogueado',JSON.stringify(user))
                 destructorDivs()
                 console.log(mensaje)
                 aHome()
@@ -189,5 +230,3 @@ function tieneUsuario(){
         }
     
 }
-
-
